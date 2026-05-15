@@ -179,8 +179,9 @@ A distorção arquitetural é definida como alteração da arquitetura normal do
 | Condição | Categoria | Justificativa |
 |----------|-----------|---------------|
 | Associada a **cicatriz cirúrgica prévia** (sem nódulo ou calcificações) | **2** | Alteração pós-operatória benigna esperada |
-| **Sem cicatriz**, sem achados adicionais, **sem exame anterior disponível** | **0** | Exame incompleto — não é possível determinar se o achado é novo ou pré-existente sem comparação com mamografia prévia |
-| **Sem cicatriz**, sem achados adicionais, **com exame anterior disponível** | **4B** | Suspeição moderada; pode representar carcinoma invasivo ou DCIS |
+| **Sem cicatriz**, sem achados adicionais, **sem exame anterior** | **0** | Exame incompleto — não é possível determinar se o achado é novo ou pré-existente sem comparação |
+| **Sem cicatriz**, sem achados adicionais, com exame anterior, **nova / estável / regressiva** | **4B** | Suspeição moderada; pode representar carcinoma invasivo ou DCIS |
+| **Sem cicatriz**, sem achados adicionais, com exame anterior, **em crescimento** | **4C** | Progressão documentada em relação ao exame anterior eleva a suspeição |
 | Com **nódulo associado** | **4C** | Combinação aumenta significativamente o risco de malignidade |
 | Com **calcificações associadas** | **4C** | Idem |
 | Com **nódulo e calcificações** | **4C** | Idem |
@@ -200,14 +201,16 @@ O léxico BI-RADS define quatro subtipos de assimetria mamária, com classifica�
 
 A classificação de assimetrias global e focal depende da disponibilidade de exame anterior para comparação:
 
-| Subtipo | Definição | Sem exame anterior | Com exame anterior | Justificativa |
-|---------|-----------|:-----------------:|:-----------------:|---------------|
-| **Assimetria** | Tecido fibroglandular visível em apenas **uma projeção** | **0** | **0** | Sempre incompleto — necessita compressão localizada ou US independente de comparação |
-| **Assimetria global** | Maior volume de tecido fibroglandular em uma mama (≥ 1 quadrante) comparada à contralateral | **0** | **3** | Sem exame anterior: incompleto — achado novo vs. antigo indeterminado. Com exame estável: variação anatômica benigna |
-| **Assimetria focal** | Tecido com volume tridimensional (visível em 2 projeções), mas sem margem convexa ou efeito de massa | **0** | **3** | Idem. Com exame estável: provavelmente benigna |
-| **Assimetria em desenvolvimento** | Achado novo, maior ou mais proeminente comparado a exame prévio | **4B** † | **4B** | Por definição pressupõe comparação com exame anterior. Malignidade em ~13 % dos casos |
+| Subtipo | Definição | Sem exame anterior | Com exame anterior (estável / regressiva) | Com exame anterior (nova / crescente) | Justificativa |
+|---------|-----------|:-----------------:|:-----------------------------------------:|:-------------------------------------:|---------------|
+| **Assimetria** | Tecido fibroglandular visível em apenas **uma projeção** | **0** | **0** | **0** | Sempre incompleto; necessita compressão localizada ou US independente de comparação |
+| **Assimetria global** | Maior volume de tecido fibroglandular em uma mama (≥ 1 quadrante) comparada à contralateral | **0** | **3** | **4B** | Sem exame: incompleto. Estável: variação anatômica benigna. Nova ou crescente: equivalente a assimetria em desenvolvimento |
+| **Assimetria focal** | Tecido com volume tridimensional (visível em 2 projeções), mas sem margem convexa ou efeito de massa | **0** | **3** | **4B** | Idem. Estável: provavelmente benigna. Nova ou crescente: moderada suspeição |
+| **Assimetria em desenvolvimento** | Achado novo, maior ou mais proeminente comparado a exame prévio | **4B** † | **4B** | **4B** | Por definição pressupõe comparação com exame anterior. Malignidade em ~13 % dos casos |
 
 † *Assimetria em desenvolvimento sem exame anterior documentado: o subtipo pressupõe a existência de comparação — o radiologista deve registrar a disponibilidade do exame anterior na seção correspondente da ferramenta.*
+
+> **Justificativa para elevação de global/focal nova ou crescente → 4B:** Uma assimetria global ou focal que não estava presente no exame anterior, ou que aumentou de tamanho, comporta-se clinicamente como uma assimetria em desenvolvimento, categoria com taxa de malignidade de ~13 %. O ACR orienta que a presença de mudança em relação ao exame anterior é o principal fator de elevação de suspeição em assimetrias. Referência: Leung JWT, Sickles EA. *AJR* 2007;188:667–675; ACR BI-RADS® Atlas, 5.ª ed., p. 118.
 
 > **Justificativa para BI-RADS 0 sem exame anterior (global/focal):** O léxico ACR estabelece que assimetrias global e focal são classificadas como provavelmente benignas apenas quando estáveis em relação a exames anteriores. Na ausência de comparação, o comportamento temporal é desconhecido e o achado deve ser investigado adicionalmente. Referência: ACR BI-RADS® Atlas, 5.ª ed., p. 117 ("Global asymmetry is a normal variant when stable").
 
@@ -283,8 +286,8 @@ Pré-processamento:
 Para cada achado:
   1. Identificar tipo (nódulo / calcificação / distorção / assimetria)
   2. Aplicar regras específicas do tipo → categoria base
-       ↳ Distorção sem cicatriz: 0 (sem exame anterior) | 4B (com exame anterior)
-       ↳ Assimetria global/focal: 0 (sem exame anterior) | 3 (com exame anterior)
+       ↳ Distorção sem cicatriz: 0 (sem exame anterior) | 4B (com exame, não crescente) | 4C (crescente)
+       ↳ Assimetria global/focal: 0 (sem exame anterior) | 3 (estável/regressiva) | 4B (nova ou crescente)
   3. Aplicar modificador de densidade (nódulo) se aplicável
   4. Verificar achados associados suspeitos → elevar para ≥ 4A se presente
   5. Registrar razões e modificadores para exibição ao usuário
@@ -375,14 +378,16 @@ A tabela abaixo mapeia cada seção deste documento ao trecho correspondente do 
 | Morfologia benigna → BI-RADS 2 | `classificarCalcificacao()` | Condição `tipo === 'benigna'` |
 | Matriz Morfologia × Distribuição | `classificarCalcificacao()` | Bloco de condicionais `if (morfologia === ...)` |
 | Distorção + cicatriz → BI-RADS 2 | `classificarDistorcao()` | Condição `temCicatriz && !temNodulo && !temCalc` |
-| Distorção sem cicatriz + sem exame anterior → 0 | `classificarDistorcao()` | Condição `!exameAnteriorDisponivel` no bloco `else` |
-| Distorção sem cicatriz + com exame anterior → 4B | `classificarDistorcao()` | Bloco final `else` quando exame anterior disponível |
+| Distorção sem cicatriz + sem exame anterior → 0 | `classificarDistorcao()` | Condição `!exameAnteriorDisponivel` |
+| Distorção sem cicatriz + crescente → 4C | `classificarDistorcao()` | Condição `dados.comparacaoComAnterior === 'crescente'` |
+| Distorção sem cicatriz + outros → 4B | `classificarDistorcao()` | Bloco `else` final |
 | Distorção + nódulo/calc → 4C | `classificarDistorcao()` | Condição `temNodulo \|\| temCalc` |
 | Assimetria simples → BI-RADS 0 | `classificarAssimetria()` | Condição `tipo === 'assimetria'` |
-| Assimetria global/focal + sem exame anterior → 0 | `classificarAssimetria()` | Condição `!exameAnteriorDisponivel` para `tipo === 'global'` e `'focal'` |
-| Assimetria global/focal + com exame anterior → 3 | `classificarAssimetria()` | Bloco `else` quando exame anterior disponível |
+| Assimetria global/focal + sem exame anterior → 0 | `classificarAssimetria()` | Condição `!exameAnteriorDisponivel` |
+| Assimetria global/focal + nova ou crescente → 4B | `classificarAssimetria()` | Condição `comparacaoComAnterior === 'novo' \|\| 'crescente'` |
+| Assimetria global/focal + estável ou regressiva → 3 | `classificarAssimetria()` | Bloco `else` final |
 | Assimetria em desenvolvimento → 4B | `classificarAssimetria()` | Condição `tipo === 'desenvolvimento'` (independe de exame anterior) |
-| Exame anterior passado ao classificador | `classificarAchados()` | Parâmetro `exameAnterior?: ExameAnterior`; lido como `exameAnteriorDisponivel` |
+| Exame anterior passado ao classificador | `classificarAchados()` | Parâmetro `exameAnterior?: ExameAnterior`; derivado como `exameAnteriorDisponivel` |
 | Achados associados suspeitos | `achadosAssociadosSuspeitos()` + `elevarMinimo()` | Chamada em todas as funções de finalização |
 | Agregação por mama (máximo) | `agregarPorMama()` | Função `resolverMama()` com `reduce` |
 | Aviso de múltiplos BI-RADS 3 | `classificarAchados()` | Filtro `tres3Direita` / `tres3Esquerda` |

@@ -240,6 +240,9 @@ function classificarDistorcao(dados: DistorcaoArquiteturalDados, exameAnteriorDi
   } else if (!exameAnteriorDisponivel) {
     cat = '0'
     razoes.push('Distorção arquitetural sem exame anterior disponível para comparação → exame incompleto, necessita complementação diagnóstica (BI-RADS 0).')
+  } else if (dados.comparacaoComAnterior === 'crescente') {
+    cat = '4C'
+    razoes.push('Distorção arquitetural em crescimento em relação ao exame anterior → progressão documentada eleva suspeição para alta (BI-RADS 4C).')
   } else {
     cat = '4B'
     razoes.push('Distorção arquitetural sem cicatriz associada, com exame anterior disponível → moderada suspeição.')
@@ -283,17 +286,29 @@ function classificarAssimetria(dados: AssimetriaDados, exameAnteriorDisponivel: 
     if (!exameAnteriorDisponivel) {
       cat = '0'
       razoes.push('Assimetria global sem exame anterior disponível para comparação → exame incompleto, necessita comparação com mamografia prévia (BI-RADS 0).')
+    } else if (dados.comparacaoComAnterior === 'novo' || dados.comparacaoComAnterior === 'crescente') {
+      cat = '4B'
+      const desc = dados.comparacaoComAnterior === 'novo'
+        ? 'nova (não identificada no exame anterior)'
+        : 'em crescimento em relação ao exame anterior'
+      razoes.push(`Assimetria global ${desc} → comportamento equivalente a assimetria em desenvolvimento → moderada suspeição.`)
     } else {
       cat = '3'
-      razoes.push('Assimetria global com exame anterior disponível, sem achados associados → provavelmente benigna (variação anatômica).')
+      razoes.push('Assimetria global estável em relação ao exame anterior, sem achados associados → provavelmente benigna (variação anatômica).')
     }
   } else if (tipo === 'focal') {
     if (!exameAnteriorDisponivel) {
       cat = '0'
       razoes.push('Assimetria focal sem exame anterior disponível para comparação → exame incompleto, necessita complementação diagnóstica (BI-RADS 0).')
+    } else if (dados.comparacaoComAnterior === 'novo' || dados.comparacaoComAnterior === 'crescente') {
+      cat = '4B'
+      const desc = dados.comparacaoComAnterior === 'novo'
+        ? 'nova (não identificada no exame anterior)'
+        : 'em crescimento em relação ao exame anterior'
+      razoes.push(`Assimetria focal ${desc} → comportamento equivalente a assimetria em desenvolvimento → moderada suspeição.`)
     } else {
       cat = '3'
-      razoes.push('Assimetria focal com exame anterior disponível, sem achados associados → provavelmente benigna.')
+      razoes.push('Assimetria focal estável em relação ao exame anterior, sem achados associados → provavelmente benigna.')
     }
   } else {
     // desenvolvimento — por definição implica comparação com exame anterior

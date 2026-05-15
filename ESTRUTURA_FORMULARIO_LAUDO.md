@@ -193,14 +193,14 @@ Exemplo: `1.5`. Incluído no texto do laudo quando preenchido.
 
 Exibido somente quando `exameAnterior.disponivel = true`. Seleção única (toggle — clicar novamente desmarca):
 
-| Valor | Rótulo | Chave interna |
-|-------|--------|--------------|
-| `novo` | Achado novo | `comparacaoComAnterior` |
-| `estavel` | Estável | idem |
-| `crescente` | Em crescimento | idem |
-| `regressivo` | Em regressão | idem |
+| Valor | Rótulo | Impacto na classificação automática |
+|-------|--------|-------------------------------------|
+| `novo` | Achado novo | Mantém **BI-RADS 4B** (distorção sem cicatriz, com exame anterior) |
+| `estavel` | Estável | Mantém **BI-RADS 4B** |
+| `crescente` | Em crescimento | Eleva para **BI-RADS 4C** — progressão documentada |
+| `regressivo` | Em regressão | Mantém **BI-RADS 4B** |
 
-> Este campo é **informacional** — influencia o texto do laudo (linha `Comparação: ...`), mas não altera a categoria BI-RADS. A categoria já é determinada pela disponibilidade do exame anterior (seção 2.2).
+> **Nota:** distorção sem cicatriz é sempre ≥ 4B independente de estabilidade — o ACR não reduz a suspeição apenas por estabilidade sem explicação cirúrgica. Somente o crescimento altera a categoria (4B → 4C).
 
 ---
 
@@ -217,7 +217,16 @@ Exibido somente quando `exameAnterior.disponivel = true`. Seleção única (togg
 
 ##### Comparação com exame anterior — campo condicional
 
-Idêntico ao da seção 2.3.3 (Distorção). Exibido somente quando `exameAnterior.disponivel = true`. Valores e chave interna (`AssimetriaDados.comparacaoComAnterior`) são os mesmos.
+Exibido somente quando `exameAnterior.disponivel = true`. Seleção única (toggle). Chave interna: `AssimetriaDados.comparacaoComAnterior`.
+
+| Valor | Rótulo | Impacto na classificação (global e focal) |
+|-------|--------|------------------------------------------|
+| `novo` | Achado novo | Eleva de **3 → 4B** — equivalente a assimetria em desenvolvimento |
+| `estavel` | Estável | Mantém **BI-RADS 3** — variação anatômica benigna |
+| `crescente` | Em crescimento | Eleva de **3 → 4B** — progressão equivale a assimetria em desenvolvimento |
+| `regressivo` | Em regressão | Mantém **BI-RADS 3** |
+
+> **Nota:** a assimetria em desenvolvimento (`tipo = 'desenvolvimento'`) é sempre BI-RADS 4B independente deste campo, pois o próprio subtipo já codifica a progressão. O campo de comparação só altera a classificação dos subtipos **global** e **focal**.
 
 ---
 
@@ -504,7 +513,8 @@ PASSO 7 — Laudo
 | Assimetria | Tipo + Mama; disponibilidade de exame anterior afeta a categoria de global e focal |
 
 > Achados com campos mínimos ausentes recebem **BI-RADS 0** automaticamente e exibem um alerta `!` no badge da aba Classificação.  
-> Distorções sem cicatriz e assimetrias global/focal também recebem **BI-RADS 0** quando `exameAnterior.disponivel = false`, **mesmo com todos os campos preenchidos** — esse comportamento é esperado e reflete a regra ACR.
+> Distorções sem cicatriz e assimetrias global/focal também recebem **BI-RADS 0** quando `exameAnterior.disponivel = false`, **mesmo com todos os campos preenchidos** — esse comportamento é esperado e reflete a regra ACR.  
+> O campo `comparacaoComAnterior` **influencia a categoria final** quando preenchido: distorção crescente → 4C; assimetria global/focal nova ou crescente → 4B.
 
 ### 6.2 Dependências entre campos
 
@@ -513,7 +523,8 @@ PASSO 7 — Laudo
 | Morfologia específica de calcificações | Tipo morfológico (`benigna` / `suspeita`) | Exibição condicional — lista diferente para cada tipo |
 | Tipo de derrame mamilar | `derrameMamilar = true` nos Achados Associados | Campo oculto até que o toggle de derrame seja ativado |
 | Data e local do exame anterior | `exameAnterior.disponivel = true` | Campos ocultos enquanto "Sem exame anterior" for a seleção ativa |
-| Comparação por achado (distorção/assimetria) | `exameAnterior.disponivel = true` | Campo oculto nos formulários de distorção e assimetria enquanto não houver exame anterior |
+| Comparação por achado — distorção | `exameAnterior.disponivel = true` | Campo oculto; quando visível, `crescente` eleva distorção sem cicatriz de 4B → 4C |
+| Comparação por achado — assimetria | `exameAnterior.disponivel = true` | Campo oculto; quando visível, `novo` ou `crescente` eleva assimetria global/focal de 3 → 4B |
 | Classificação por mama direita/esquerda | Sub-modo "Separado por mama" selecionado | Dois campos independentes |
 | Classificação bilateral | Sub-modo "Bilateral único" selecionado | Campo único |
 
@@ -558,8 +569,8 @@ PASSO 7 — Laudo
 | Disponibilidade de exame anterior | `LaudoState.exameAnterior.disponivel` (boolean) | — |
 | Data do exame anterior | `LaudoState.exameAnterior.data` (string\|undefined) | — |
 | Local do exame anterior | `LaudoState.exameAnterior.local` (string\|undefined) | — |
-| Comparação — distorção | `DistorcaoArquiteturalDados.comparacaoComAnterior` (ComparacaoStatus\|undefined) | — |
-| Comparação — assimetria | `AssimetriaDados.comparacaoComAnterior` (ComparacaoStatus\|undefined) | — |
+| Comparação — distorção | `DistorcaoArquiteturalDados.comparacaoComAnterior` (ComparacaoStatus\|undefined) | `classificarDistorcao()` + `laudoGenerator.ts` |
+| Comparação — assimetria | `AssimetriaDados.comparacaoComAnterior` (ComparacaoStatus\|undefined) | `classificarAssimetria()` + `laudoGenerator.ts` |
 | Modo de classificação | `LaudoState.modoClassificacao` (`'automatico'`\|`'manual'`) | — |
 | BI-RADS Mama Direita | `LaudoState.biradsDireita` (BiRadsCategory\|undefined) | `BIRADS_CATEGORIAS` |
 | BI-RADS Mama Esquerda | `LaudoState.biradsEsquerda` (BiRadsCategory\|undefined) | `BIRADS_CATEGORIAS` |
