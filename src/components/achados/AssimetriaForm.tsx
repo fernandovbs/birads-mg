@@ -1,14 +1,24 @@
-import type { AssimetriaDados } from '../../data/types'
+import type { AssimetriaDados, ComparacaoStatus } from '../../data/types'
 import { ASSIMETRIA_TIPO } from '../../data/biradsData'
 import LocalizacaoForm from '../Localizacao'
 import AchadosAssociadosForm from '../AchadosAssociadosForm'
+import FieldGroup from '../ui/FieldGroup'
+import OptionChip from '../ui/OptionChip'
+
+const COMPARACAO_OPTIONS: { value: ComparacaoStatus; label: string }[] = [
+  { value: 'novo',       label: 'Achado novo' },
+  { value: 'estavel',    label: 'Estável' },
+  { value: 'crescente',  label: 'Em crescimento' },
+  { value: 'regressivo', label: 'Em regressão' },
+]
 
 interface AssimetriaFormProps {
   value: AssimetriaDados
   onChange: (v: AssimetriaDados) => void
+  exameAnteriorDisponivel: boolean
 }
 
-export default function AssimetriaForm({ value, onChange }: AssimetriaFormProps) {
+export default function AssimetriaForm({ value, onChange, exameAnteriorDisponivel }: AssimetriaFormProps) {
   return (
     <div className="space-y-5">
       <div>
@@ -47,6 +57,24 @@ export default function AssimetriaForm({ value, onChange }: AssimetriaFormProps)
           onChange={aa => onChange({ ...value, achadosAssociados: aa })}
         />
       </div>
+
+      {exameAnteriorDisponivel && (
+        <div className="border-t border-gray-100 pt-4">
+          <FieldGroup label="Comparação com exame anterior">
+            {COMPARACAO_OPTIONS.map(opt => (
+              <OptionChip
+                key={opt.value}
+                label={opt.label}
+                active={value.comparacaoComAnterior === opt.value}
+                onClick={() => onChange({
+                  ...value,
+                  comparacaoComAnterior: value.comparacaoComAnterior === opt.value ? undefined : opt.value,
+                })}
+              />
+            ))}
+          </FieldGroup>
+        </div>
+      )}
     </div>
   )
 }

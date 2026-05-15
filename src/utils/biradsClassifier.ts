@@ -9,6 +9,7 @@ import type {
   ClassificacaoMama,
   ResultadoClassificacao,
   BiRadsCategory,
+  ExameAnterior,
 } from '../data/types'
 
 // ─── Ordem numérica das categorias ────────────────────────────────────────────
@@ -218,7 +219,7 @@ function classificarCalcificacao(dados: CalcificacoesDados): ClassificacaoAchado
 
 // ─── Distorção Arquitetural ───────────────────────────────────────────────────
 
-function classificarDistorcao(dados: DistorcaoArquiteturalDados): ClassificacaoAchado {
+function classificarDistorcao(dados: DistorcaoArquiteturalDados, exameAnteriorDisponivel: boolean): ClassificacaoAchado {
   const { associadaA, achadosAssociados: aa } = dados
   const razoes: string[] = []
   const modificadores: string[] = []
@@ -236,9 +237,12 @@ function classificarDistorcao(dados: DistorcaoArquiteturalDados): ClassificacaoA
     cat = '4C'
     const extras = [temNodulo && 'nódulo', temCalc && 'calcificações'].filter(Boolean).join(' e ')
     razoes.push(`Distorção arquitetural com ${extras} associados → alta suspeição.`)
+  } else if (!exameAnteriorDisponivel) {
+    cat = '0'
+    razoes.push('Distorção arquitetural sem exame anterior disponível para comparação → exame incompleto, necessita complementação diagnóstica (BI-RADS 0).')
   } else {
     cat = '4B'
-    razoes.push('Distorção arquitetural sem cicatriz associada → moderada suspeição.')
+    razoes.push('Distorção arquitetural sem cicatriz associada, com exame anterior disponível → moderada suspeição.')
   }
 
   const suspeitos = achadosAssociadosSuspeitos(aa)
@@ -257,7 +261,7 @@ function classificarDistorcao(dados: DistorcaoArquiteturalDados): ClassificacaoA
 
 // ─── Assimetria ───────────────────────────────────────────────────────────────
 
-function classificarAssimetria(dados: AssimetriaDados): ClassificacaoAchado {
+function classificarAssimetria(dados: AssimetriaDados, exameAnteriorDisponivel: boolean): ClassificacaoAchado {
   const { tipo, achadosAssociados: aa } = dados
   const razoes: string[] = []
   const modificadores: string[] = []
@@ -276,13 +280,23 @@ function classificarAssimetria(dados: AssimetriaDados): ClassificacaoAchado {
     cat = '0'
     razoes.push('Assimetria visível em apenas uma projeção → necessita complementação diagnóstica (compressão localizada, US).')
   } else if (tipo === 'global') {
-    cat = '3'
-    razoes.push('Assimetria global sem achados associados → provavelmente benigna (variação anatômica).')
+    if (!exameAnteriorDisponivel) {
+      cat = '0'
+      razoes.push('Assimetria global sem exame anterior disponível para comparação → exame incompleto, necessita comparação com mamografia prévia (BI-RADS 0).')
+    } else {
+      cat = '3'
+      razoes.push('Assimetria global com exame anterior disponível, sem achados associados → provavelmente benigna (variação anatômica).')
+    }
   } else if (tipo === 'focal') {
-    cat = '3'
-    razoes.push('Assimetria focal sem achados associados → provavelmente benigna.')
+    if (!exameAnteriorDisponivel) {
+      cat = '0'
+      razoes.push('Assimetria focal sem exame anterior disponível para comparação → exame incompleto, necessita complementação diagnóstica (BI-RADS 0).')
+    } else {
+      cat = '3'
+      razoes.push('Assimetria focal com exame anterior disponível, sem achados associados → provavelmente benigna.')
+    }
   } else {
-    // desenvolvimento
+    // desenvolvimento — por definição implica comparação com exame anterior
     cat = '4B'
     razoes.push('Assimetria em desenvolvimento → moderada suspeição (novo achado ou crescimento em relação a exame anterior).')
   }
@@ -341,13 +355,14 @@ function agregarPorMama(achados: Achado[], classificacoes: ClassificacaoAchado[]
 
 // ─── Entrada principal ────────────────────────────────────────────────────────
 
-export function classificarAchados(achados: Achado[]): ResultadoClassificacao {
+export function classificarAchados(achados: Achado[], exameAnterior?: ExameAnterior): ResultadoClassificacao {
+  const exameAnteriorDisponivel = exameAnterior?.disponivel ?? false
   const porAchado: ClassificacaoAchado[] = achados.map(achado => {
     switch (achado.tipo) {
       case 'nodulo':       return classificarNodulo(achado.dados as NoduloDados)
       case 'calcificacao': return classificarCalcificacao(achado.dados as CalcificacoesDados)
-      case 'distorcao':    return classificarDistorcao(achado.dados as DistorcaoArquiteturalDados)
-      case 'assimetria':   return classificarAssimetria(achado.dados as AssimetriaDados)
+      case 'distorcao':    return classificarDistorcao(achado.dados as DistorcaoArquiteturalDados, exameAnteriorDisponivel)
+      case 'assimetria':   return classificarAssimetria(achado.dados as AssimetriaDados, exameAnteriorDisponivel)
     }
   })
 

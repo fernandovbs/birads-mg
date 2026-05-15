@@ -61,6 +61,7 @@ const initialState: LaudoState = {
   biradsEsquerda: undefined,
   biradsFinal: undefined,
   observacoes: '',
+  exameAnterior: { disponivel: false },
 }
 
 // ─── App ───────────────────────────────────────────────────────────────────────
@@ -74,8 +75,8 @@ export default function App() {
 
   // Classificação automática reativa
   const classificacaoAuto = useMemo(
-    () => state.achados.length > 0 ? classificarAchados(state.achados) : null,
-    [state.achados],
+    () => state.achados.length > 0 ? classificarAchados(state.achados, state.exameAnterior) : null,
+    [state.achados, state.exameAnterior],
   )
 
   const setModoClassificacao = (modo: ModoClassificacao) =>
@@ -194,6 +195,69 @@ export default function App() {
               </div>
             </SectionCard>
 
+            {/* Exame Anterior */}
+            <SectionCard
+              title="Exames Anteriores"
+              subtitle="Disponibilidade de exames anteriores para comparação"
+            >
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setState(s => ({ ...s, exameAnterior: { disponivel: false } }))}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all ${
+                      !state.exameAnterior.disponivel
+                        ? 'border-amber-500 bg-amber-50 text-amber-800'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                    }`}
+                  >
+                    {!state.exameAnterior.disponivel && '✓ '}Sem exame anterior
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setState(s => ({ ...s, exameAnterior: { ...s.exameAnterior, disponivel: true } }))}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all ${
+                      state.exameAnterior.disponivel
+                        ? 'border-blue-500 bg-blue-50 text-blue-800'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                    }`}
+                  >
+                    {state.exameAnterior.disponivel && '✓ '}Com exame anterior
+                  </button>
+                </div>
+
+                {state.exameAnterior.disponivel && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 block mb-1">Data do exame anterior</label>
+                      <input
+                        type="date"
+                        value={state.exameAnterior.data ?? ''}
+                        onChange={e => setState(s => ({ ...s, exameAnterior: { ...s.exameAnterior, data: e.target.value } }))}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 block mb-1">Local / serviço</label>
+                      <input
+                        type="text"
+                        placeholder="Ex.: Hospital das Clínicas"
+                        value={state.exameAnterior.local ?? ''}
+                        onChange={e => setState(s => ({ ...s, exameAnterior: { ...s.exameAnterior, local: e.target.value } }))}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {!state.exameAnterior.disponivel && (
+                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 leading-relaxed">
+                    <strong>Impacto na classificação automática:</strong> distorções arquiteturais (sem cicatriz) e assimetrias global/focal serão classificadas como <strong>BI-RADS 0</strong> — exame incompleto, necessita complementação por ausência de comparação.
+                  </p>
+                )}
+              </div>
+            </SectionCard>
+
             {/* Achados */}
             <SectionCard
               title="Achados"
@@ -227,6 +291,7 @@ export default function App() {
                       index={state.achados.filter(a => a.tipo === achado.tipo).findIndex(a => a.id === achado.id)}
                       onChange={a => updateAchado(achado.id, a)}
                       onRemove={() => removeAchado(achado.id)}
+                      exameAnteriorDisponivel={state.exameAnterior.disponivel}
                     />
                   ))}
                 </div>

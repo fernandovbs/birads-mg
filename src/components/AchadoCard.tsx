@@ -17,9 +17,10 @@ interface AchadoCardProps {
   index: number
   onChange: (a: Achado) => void
   onRemove: () => void
+  exameAnteriorDisponivel: boolean
 }
 
-export default function AchadoCard({ achado, index, onChange, onRemove }: AchadoCardProps) {
+export default function AchadoCard({ achado, index, onChange, onRemove, exameAnteriorDisponivel }: AchadoCardProps) {
   const [open, setOpen] = useState(true)
   const meta = TIPO_LABELS[achado.tipo]!
 
@@ -66,12 +67,14 @@ export default function AchadoCard({ achado, index, onChange, onRemove }: Achado
               <DistorcaoForm
                 value={achado.dados as Parameters<typeof DistorcaoForm>[0]['value']}
                 onChange={d => onChange({ ...achado, dados: d })}
+                exameAnteriorDisponivel={exameAnteriorDisponivel}
               />
             )}
             {achado.tipo === 'assimetria' && (
               <AssimetriaForm
                 value={achado.dados as Parameters<typeof AssimetriaForm>[0]['value']}
                 onChange={d => onChange({ ...achado, dados: d })}
+                exameAnteriorDisponivel={exameAnteriorDisponivel}
               />
             )}
           </div>

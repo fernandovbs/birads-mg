@@ -13,8 +13,9 @@ O formulário está organizado em três abas sequenciais que refletem o raciocí
 ```
 Aba 1: ACHADOS
   └─ 1.1 Composição Mamária       ← pré-requisito do laudo
-  └─ 1.2 Achados (0..N)           ← núcleo diagnóstico
-  └─ 1.3 Observações Adicionais   ← contexto complementar
+  └─ 1.2 Exames Anteriores        ← disponibilidade de comparação (afeta classificação)
+  └─ 1.3 Achados (0..N)           ← núcleo diagnóstico
+  └─ 1.4 Observações Adicionais   ← contexto complementar
         ↓
 Aba 2: CLASSIFICAÇÃO
   └─ 2.1 Modo Automático          ← inferência pelas regras ACR 2025
@@ -26,7 +27,7 @@ Aba 3: LAUDO
   └─ 3.2 Texto estruturado        ← laudo copiável
 ```
 
-> **Ordem lógica obrigatória:** composição mamária → achados (um por vez, do mais relevante ao menos relevante) → achados associados → localização → classificação → laudo.
+> **Ordem lógica obrigatória:** composição mamária → exames anteriores → achados (um por vez, do mais relevante ao menos relevante) → achados associados → localização → classificação → laudo.
 
 ---
 
@@ -48,7 +49,31 @@ Aba 3: LAUDO
 
 ---
 
-### 2.2 Achados
+### 2.2 Exames Anteriores
+
+**Tipo de campo:** seleção única (booleano) + campos opcionais condicionais  
+**Posição no laudo gerado:** seção `EXAME ANTERIOR`, após a técnica — sempre presente  
+**Impacto na classificação automática:** sim — distorções arquiteturais sem cicatriz e assimetrias global/focal recebem **BI-RADS 0** quando não há exame anterior disponível
+
+#### Campo principal — disponibilidade
+
+| Valor | Rótulo | Cor do botão | Efeito na classificação |
+|-------|--------|-------------|------------------------|
+| `false` (padrão) | Sem exame anterior | Âmbar | Distorções sem cicatriz e assimetrias global/focal → BI-RADS 0 |
+| `true` | Com exame anterior | Azul | Ativa campos de data e local; classificação segue morfologia dos descritores |
+
+> **Banner de alerta:** quando `disponivel = false`, um aviso âmbar exibe o impacto na classificação automática diretamente no formulário.
+
+#### Campos condicionais (exibidos somente quando `disponivel = true`)
+
+| Campo | Tipo | Chave interna (`ExameAnterior`) | Uso no laudo |
+|-------|------|---------------------------------|--------------|
+| Data do exame anterior | Entrada de data (`YYYY-MM-DD`) | `data` | Formatada como `DD/MM/AAAA` na seção `EXAME ANTERIOR` |
+| Local / serviço | Entrada de texto livre | `local` | Incluído na mesma seção |
+
+---
+
+### 2.3 Achados
 
 Múltiplos achados podem ser adicionados. Cada achado é independente e possui seu próprio formulário colapsável. A ordem de adição determina a numeração no laudo (Nódulo 1, Nódulo 2, Calcificações 1, etc.).
 
@@ -63,7 +88,7 @@ Múltiplos achados podem ser adicionados. Cada achado é independente e possui s
 
 ---
 
-#### 2.2.1 Nódulo
+#### 2.3.1 Nódulo
 
 ##### Campos obrigatórios para classificação automática
 
@@ -101,7 +126,7 @@ Exemplo: `1.5`. Incluído no texto do laudo quando preenchido.
 
 ---
 
-#### 2.2.2 Calcificações
+#### 2.3.2 Calcificações
 
 ##### Morfologia — seleção em dois níveis
 
@@ -151,7 +176,7 @@ Exemplo: `1.5`. Incluído no texto do laudo quando preenchido.
 
 ---
 
-#### 2.2.3 Distorção Arquitetural
+#### 2.3.3 Distorção Arquitetural
 
 ##### Associada a — seleção múltipla (0 a N opções)
 
@@ -162,24 +187,41 @@ Exemplo: `1.5`. Incluído no texto do laudo quando preenchido.
 | `com-calcificacoes` | Com calcificações associadas |
 | `cicatriz` | Associada a cicatriz cirúrgica prévia |
 
-> A combinação de valores é livre. A presença de `cicatriz` sem nódulo ou calcificações resulta em BI-RADS 2 na classificação automática.
+> A combinação de valores é livre. A presença de `cicatriz` sem nódulo ou calcificações resulta em BI-RADS 2 na classificação automática, independente da disponibilidade de exame anterior.
+
+##### Comparação com exame anterior — campo condicional
+
+Exibido somente quando `exameAnterior.disponivel = true`. Seleção única (toggle — clicar novamente desmarca):
+
+| Valor | Rótulo | Chave interna |
+|-------|--------|--------------|
+| `novo` | Achado novo | `comparacaoComAnterior` |
+| `estavel` | Estável | idem |
+| `crescente` | Em crescimento | idem |
+| `regressivo` | Em regressão | idem |
+
+> Este campo é **informacional** — influencia o texto do laudo (linha `Comparação: ...`), mas não altera a categoria BI-RADS. A categoria já é determinada pela disponibilidade do exame anterior (seção 2.2).
 
 ---
 
-#### 2.2.4 Assimetria
+#### 2.3.4 Assimetria
 
 ##### Tipo — seleção única obrigatória — exibição em grade de cards
 
-| Valor | Rótulo | Descrição exibida no card |
-|-------|--------|---------------------------|
-| `assimetria` | Assimetria | Tecido fibroglandular visível em uma projeção apenas, sem volume tridimensional. |
-| `global` | Assimetria Global | Maior volume de tecido fibroglandular em uma mama comparada à contralateral, envolvendo pelo menos um quadrante. |
-| `focal` | Assimetria Focal | Tecido com volume tridimensional em mais de uma projeção, porém sem margem convexa ou efeito de massa. |
-| `desenvolvimento` | Assimetria em Desenvolvimento | Achado novo, maior ou mais proeminente em comparação a exame prévio. |
+| Valor | Rótulo | Sem exame anterior | Com exame anterior | Descrição exibida no card |
+|-------|--------|:-----------------:|:-----------------:|---------------------------|
+| `assimetria` | Assimetria | **0** | **0** | Tecido fibroglandular visível em uma projeção apenas, sem volume tridimensional. |
+| `global` | Assimetria Global | **0** | **3** | Maior volume de tecido fibroglandular em uma mama comparada à contralateral, envolvendo pelo menos um quadrante. |
+| `focal` | Assimetria Focal | **0** | **3** | Tecido com volume tridimensional em mais de uma projeção, porém sem margem convexa ou efeito de massa. |
+| `desenvolvimento` | Assimetria em Desenvolvimento | **4B** | **4B** | Achado novo, maior ou mais proeminente em comparação a exame prévio. |
+
+##### Comparação com exame anterior — campo condicional
+
+Idêntico ao da seção 2.3.3 (Distorção). Exibido somente quando `exameAnterior.disponivel = true`. Valores e chave interna (`AssimetriaDados.comparacaoComAnterior`) são os mesmos.
 
 ---
 
-### 2.3 Localização — bloco compartilhado por todos os tipos de achado
+### 2.4 Localização — bloco compartilhado por todos os tipos de achado
 
 Aparece em todos os formulários de achado. Todos os campos são opcionais para o preenchimento do formulário, mas a **mama** é usada pela classificação automática para agregar os achados por lado.
 
@@ -226,7 +268,7 @@ Exemplo: `2.5`
 
 ---
 
-### 2.4 Achados Associados — bloco compartilhado por nódulo, distorção e assimetria
+### 2.5 Achados Associados — bloco compartilhado por nódulo, distorção e assimetria
 
 **Seleção múltipla independente** — cada item é um toggle booleano. Qualquer combinação é válida.
 
@@ -252,11 +294,13 @@ Seleção única opcional (toggle):
 
 ---
 
-### 2.5 Observações Adicionais
+### 2.6 Observações Adicionais
 
 **Tipo:** área de texto livre (3 linhas visíveis, redimensionável desativado)  
 **Posição no laudo:** seção `OBSERVAÇÕES`, antes da `CONCLUSÃO`  
-**Uso típico:** comparação com exame anterior, dados clínicos relevantes, limitações técnicas do exame
+**Uso típico:** dados clínicos relevantes, limitações técnicas do exame, informações complementares não contempladas nos demais campos
+
+> A comparação com exame anterior é registrada na seção dedicada **Exames Anteriores** (2.2) e nos campos de comparação por achado (2.3.3 e 2.3.4), não neste campo.
 
 ---
 
@@ -340,6 +384,9 @@ MAMOGRAFIA BILATERAL
 TÉCNICA: Exame realizado nas incidências craniocaudal (CC) e
 médio-lateral-oblíqua (MLO) bilateralmente.
 
+EXAME ANTERIOR: [Mamografia de DD/MM/AAAA — local. Estudo comparativo realizado.]
+           ou:  Não disponível para comparação.      ← sempre presente
+
 COMPOSIÇÃO MAMÁRIA:                          ← somente se preenchida
 [categoria selecionada]
 
@@ -347,8 +394,9 @@ ACHADOS:
 
 [Tipo de achado] N: [descrição dos descritores]
 Localização: [mama] [posição horária] [quadrante] [profundidade] [distância do mamilo]
-Achados associados: [lista]                  ← somente se houver
-
+Achados associados: [lista]                  ← somente se houver (nódulo, distorção, assimetria)
+Comparação: [texto da comparação].           ← somente se exame anterior disponível e campo preenchido
+                                               (distorção e assimetria)
 [repete para cada achado]
 
 OBSERVAÇÕES:                                 ← somente se preenchidas
@@ -386,14 +434,18 @@ Localização: [localização completa].
 Distorção Arquitetural N: Distorção da arquitetura do parênquima
 mamário[ — associação(ões)].
 Localização: [localização completa].
-Achados associados: [lista].
+Achados associados: [lista].                         ← somente se houver
+Comparação: [achado novo | estável | em crescimento | em regressão] em relação ao exame anterior.
+                                                     ← somente se exame anterior e campo preenchido
 ```
 
 **Assimetria:**
 ```
 Assimetria N: [tipo de assimetria].
 Localização: [localização completa].
-Achados associados: [lista].
+Achados associados: [lista].                         ← somente se houver
+Comparação: [achado novo | estável | em crescimento | em regressão] em relação ao exame anterior.
+                                                     ← somente se exame anterior e campo preenchido
 ```
 
 ---
@@ -407,31 +459,38 @@ PASSO 1 — Composição Mamária
   ┌─ Selecione a categoria a/b/c/d
   └─ Isso define o contexto de sensibilidade para todos os achados
 
-PASSO 2 — Primeiro achado (mais relevante clinicamente)
-  ├─ 2a. Selecione o tipo (nódulo, calcificação, distorção, assimetria)
-  ├─ 2b. Preencha os descritores específicos do tipo
-  │       Nódulo:       forma → margem → densidade → tamanho (opcional)
+PASSO 2 — Exames Anteriores  ← NOVO — impacta classificação automática
+  ├─ Indique se há exame anterior disponível para comparação
+  ├─ Se sim: informe data e local (opcionais, mas recomendados)
+  └─ ⚠ Sem exame anterior: distorções e assimetrias global/focal → BI-RADS 0
+
+PASSO 3 — Primeiro achado (mais relevante clinicamente)
+  ├─ 3a. Selecione o tipo (nódulo, calcificação, distorção, assimetria)
+  ├─ 3b. Preencha os descritores específicos do tipo
+  │       Nódulo:        forma → margem → densidade → tamanho (opcional)
   │       Calcificações: tipo → morfologia → distribuição
-  │       Distorção:    associações (multi-select)
-  │       Assimetria:   tipo (card)
-  ├─ 2c. Localização
+  │       Distorção:     associações (multi-select)
+  │       Assimetria:    tipo (card)
+  ├─ 3c. Localização
   │       mama → posição horária → quadrante → profundidade → distância
-  └─ 2d. Achados associados (se aplicável ao tipo)
-          ativar toggles → especificar tipo de derrame (se derrame ativo)
+  ├─ 3d. Achados associados (se aplicável ao tipo)
+  │       ativar toggles → especificar tipo de derrame (se derrame ativo)
+  └─ 3e. Comparação com exame anterior (distorção e assimetria, se exame anterior disponível)
+          novo | estável | em crescimento | em regressão
 
-PASSO 3 — Achados adicionais
-  └─ Repita o Passo 2 para cada achado adicional
+PASSO 4 — Achados adicionais
+  └─ Repita o Passo 3 para cada achado adicional
 
-PASSO 4 — Observações Adicionais (opcional)
-  └─ Preencha apenas se houver contexto clínico relevante
+PASSO 5 — Observações Adicionais (opcional)
+  └─ Preencha apenas se houver contexto clínico relevante não contemplado nos campos acima
 
-PASSO 5 — Classificação
+PASSO 6 — Classificação
   ├─ Modo Automático (padrão): revisar o raciocínio gerado
   │   ├─ Verifique se todos os achados estão sem alerta de incompleto
   │   └─ Confirme a classificação por mama
   └─ Modo Manual: selecionar categoria por mama ou bilateral
 
-PASSO 6 — Laudo
+PASSO 7 — Laudo
   └─ Revisar o texto gerado e copiar para o sistema de destino (RIS/PACS/editor)
 ```
 
@@ -441,10 +500,11 @@ PASSO 6 — Laudo
 |----------------|-----------------------------------------------------|
 | Nódulo | Forma + Margem + Densidade + Mama |
 | Calcificações | Tipo morfológico + Morfologia específica + Distribuição + Mama |
-| Distorção | Mama (associações são opcionais) |
-| Assimetria | Tipo + Mama |
+| Distorção | Mama (associações opcionais); disponibilidade de exame anterior afeta a categoria |
+| Assimetria | Tipo + Mama; disponibilidade de exame anterior afeta a categoria de global e focal |
 
-> Achados com campos mínimos ausentes recebem **BI-RADS 0** automaticamente e exibem um alerta `!` no badge da aba Classificação.
+> Achados com campos mínimos ausentes recebem **BI-RADS 0** automaticamente e exibem um alerta `!` no badge da aba Classificação.  
+> Distorções sem cicatriz e assimetrias global/focal também recebem **BI-RADS 0** quando `exameAnterior.disponivel = false`, **mesmo com todos os campos preenchidos** — esse comportamento é esperado e reflete a regra ACR.
 
 ### 6.2 Dependências entre campos
 
@@ -452,6 +512,8 @@ PASSO 6 — Laudo
 |-------|-----------|---------------|
 | Morfologia específica de calcificações | Tipo morfológico (`benigna` / `suspeita`) | Exibição condicional — lista diferente para cada tipo |
 | Tipo de derrame mamilar | `derrameMamilar = true` nos Achados Associados | Campo oculto até que o toggle de derrame seja ativado |
+| Data e local do exame anterior | `exameAnterior.disponivel = true` | Campos ocultos enquanto "Sem exame anterior" for a seleção ativa |
+| Comparação por achado (distorção/assimetria) | `exameAnterior.disponivel = true` | Campo oculto nos formulários de distorção e assimetria enquanto não houver exame anterior |
 | Classificação por mama direita/esquerda | Sub-modo "Separado por mama" selecionado | Dois campos independentes |
 | Classificação bilateral | Sub-modo "Bilateral único" selecionado | Campo único |
 
@@ -462,10 +524,12 @@ PASSO 6 — Laudo
 | Tipo de controle | Comportamento | Exemplos |
 |-----------------|---------------|---------|
 | **Chip de seleção única** | Clicar seleciona; não é possível desmarcar sem selecionar outra opção | Forma, Margem, Densidade, Tipo morfológico, Tipo de assimetria |
-| **Chip de toggle** | Clicar seleciona; clicar novamente desmarca (permite estado vazio) | Quadrante, Posição horária, Profundidade, BI-RADS manual |
+| **Chip de toggle** | Clicar seleciona; clicar novamente desmarca (permite estado vazio) | Quadrante, Posição horária, Profundidade, BI-RADS manual, Comparação com exame anterior |
 | **Toggle booleano** | Ativado/desativado por clique; múltiplas seleções simultâneas | Achados associados, Associações da distorção |
+| **Botão de modo** | Seleção exclusiva entre duas opções; estilizado por contexto (azul/âmbar) | Exames anteriores (sem / com) |
 | **Card de seleção** | Cartão clicável com título e descrição; seleção única | Composição mamária, Tipo de assimetria, Modo de classificação |
-| **Entrada de texto** | Campo livre numérico | Tamanho do nódulo (cm), Distância do mamilo (cm) |
+| **Entrada de data** | Campo nativo do navegador; formato interno `YYYY-MM-DD`, exibido como `DD/MM/AAAA` no laudo | Data do exame anterior |
+| **Entrada de texto** | Campo livre numérico ou textual | Tamanho do nódulo (cm), Distância do mamilo (cm), Local do exame anterior |
 | **Área de texto** | Campo livre multi-linha | Observações adicionais |
 
 ---
@@ -491,6 +555,11 @@ PASSO 6 — Laudo
 | Distância do mamilo | `localizacao.distanciaMamilo` (string\|undefined) | — |
 | Achados associados | `achadosAssociados.*` (boolean) | `ACHADOS_ASSOCIADOS` |
 | Tipo de derrame | `achadosAssociados.derrameMamilarTipo` (string\|undefined) | `DERRAME_MAMILAR_TIPO` |
+| Disponibilidade de exame anterior | `LaudoState.exameAnterior.disponivel` (boolean) | — |
+| Data do exame anterior | `LaudoState.exameAnterior.data` (string\|undefined) | — |
+| Local do exame anterior | `LaudoState.exameAnterior.local` (string\|undefined) | — |
+| Comparação — distorção | `DistorcaoArquiteturalDados.comparacaoComAnterior` (ComparacaoStatus\|undefined) | — |
+| Comparação — assimetria | `AssimetriaDados.comparacaoComAnterior` (ComparacaoStatus\|undefined) | — |
 | Modo de classificação | `LaudoState.modoClassificacao` (`'automatico'`\|`'manual'`) | — |
 | BI-RADS Mama Direita | `LaudoState.biradsDireita` (BiRadsCategory\|undefined) | `BIRADS_CATEGORIAS` |
 | BI-RADS Mama Esquerda | `LaudoState.biradsEsquerda` (BiRadsCategory\|undefined) | `BIRADS_CATEGORIAS` |

@@ -1,5 +1,13 @@
 export type BiRadsCategory = '0' | '1' | '2' | '3' | '4A' | '4B' | '4C' | '5' | '6'
 
+export type ComparacaoStatus = 'novo' | 'estavel' | 'crescente' | 'regressivo'
+
+export interface ExameAnterior {
+  disponivel: boolean
+  data?: string
+  local?: string
+}
+
 export type MamaLado = 'direita' | 'esquerda' | 'bilateral'
 export type Profundidade = 'anterior' | 'medio' | 'posterior'
 
@@ -45,6 +53,7 @@ export interface DistorcaoArquiteturalDados {
   associadaA: string[]
   localizacao: Localizacao
   achadosAssociados: AchadosAssociados
+  comparacaoComAnterior?: ComparacaoStatus
 }
 
 export interface AssimetriaDados {
@@ -52,6 +61,7 @@ export interface AssimetriaDados {
   tipo: string
   localizacao: Localizacao
   achadosAssociados: AchadosAssociados
+  comparacaoComAnterior?: ComparacaoStatus
 }
 
 export type TipoAchado = 'nodulo' | 'calcificacao' | 'distorcao' | 'assimetria'
@@ -95,4 +105,5 @@ export interface LaudoState {
   biradsEsquerda?: BiRadsCategory
   biradsFinal?: BiRadsCategory
   observacoes?: string
+  exameAnterior: ExameAnterior
 }

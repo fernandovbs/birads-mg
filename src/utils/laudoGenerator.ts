@@ -106,6 +106,13 @@ function gerarTextoCalcificacao(dados: CalcificacoesDados, idx: number): string 
   return linhas.join('\n')
 }
 
+const COMPARACAO_TEXTO: Record<string, string> = {
+  novo:       'achado novo, não identificado no exame anterior',
+  estavel:    'estável em relação ao exame anterior',
+  crescente:  'em crescimento em relação ao exame anterior',
+  regressivo: 'em regressão em relação ao exame anterior',
+}
+
 function gerarTextoDistorcao(dados: DistorcaoArquiteturalDados, idx: number): string {
   const linhas: string[] = []
 
@@ -117,6 +124,10 @@ function gerarTextoDistorcao(dados: DistorcaoArquiteturalDados, idx: number): st
 
   const aa = formatAchadosAssociados(dados.achadosAssociados)
   if (aa) linhas.push(aa)
+
+  if (dados.comparacaoComAnterior) {
+    linhas.push(`Comparação: ${COMPARACAO_TEXTO[dados.comparacaoComAnterior]}.`)
+  }
 
   return linhas.join('\n')
 }
@@ -132,6 +143,10 @@ function gerarTextoAssimetria(dados: AssimetriaDados, idx: number): string {
 
   const aa = formatAchadosAssociados(dados.achadosAssociados)
   if (aa) linhas.push(aa)
+
+  if (dados.comparacaoComAnterior) {
+    linhas.push(`Comparação: ${COMPARACAO_TEXTO[dados.comparacaoComAnterior]}.`)
+  }
 
   return linhas.join('\n')
 }
@@ -163,6 +178,25 @@ export function gerarLaudo(
   linhas.push('MAMOGRAFIA BILATERAL')
   linhas.push('')
   linhas.push('TÉCNICA: Exame realizado nas incidências craniocaudal (CC) e médio-lateral-oblíqua (MLO) bilateralmente.')
+  linhas.push('')
+
+  // Exame anterior
+  if (state.exameAnterior.disponivel) {
+    const partes = ['EXAME ANTERIOR:']
+    if (state.exameAnterior.data) {
+      const [ano, mes, dia] = state.exameAnterior.data.split('-')
+      partes.push(`Mamografia de ${dia}/${mes}/${ano}`)
+      if (state.exameAnterior.local) partes.push(`— ${state.exameAnterior.local}`)
+      partes.push('. Estudo comparativo realizado.')
+    } else if (state.exameAnterior.local) {
+      partes.push(`${state.exameAnterior.local}. Estudo comparativo realizado.`)
+    } else {
+      partes.push('Disponível. Estudo comparativo realizado.')
+    }
+    linhas.push(partes.join(' '))
+  } else {
+    linhas.push('EXAME ANTERIOR: Não disponível para comparação.')
+  }
   linhas.push('')
 
   // Composição
